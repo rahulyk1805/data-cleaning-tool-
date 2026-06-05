@@ -1,7 +1,7 @@
 # ============================================================
 # cleaner.py
 # ============================================================
-
+import os
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -55,7 +55,9 @@ def detect_file_type(file_path):
         # JV
         elif "partyname" in text or "narration" in text:
             return "JV"
-
+        # HO EXP
+        elif "ho" in os.path.basename(file_path).lower():
+            return "HO EXP"
         # SUNDRY CREDITORS
         elif "sundry creditors" in text or "group summary" in text:
             return "SUNDRY CREDITORS"
@@ -454,7 +456,109 @@ def clean_jv_file(file_path):
             })
 
     return raw_df, cleaned_df, changes
+# ============================================================
+# HO EXP CLEANING
+# ============================================================
 
+def clean_ho_exp_file(file_path):
+
+    raw_df = pd.read_excel(file_path, header=None)
+
+    cleaned_df = raw_df.copy()
+
+    changes = []
+
+    total_row = None
+
+    for i in range(len(raw_df)):
+
+        row_text = " ".join(
+            [
+                str(x).lower()
+                for x in raw_df.iloc[i].tolist()
+                if pd.notna(x)
+            ]
+        )
+
+        if "grand total" in row_text:
+
+            total_row = i
+            break
+
+    if total_row is None:
+
+        changes.append({
+            "row": 0,
+            "reason": "Grand Total row not found"
+        })
+
+        return raw_df, cleaned_df, changes
+
+    numeric_columns = []
+
+    for col in range(len(raw_df.columns)):
+
+        count_numeric = 0
+
+        for row in range(total_row):
+
+            try:
+
+                value = str(
+                    raw_df.iat[row, col]
+                ).replace(",", "")
+
+                float(value)
+
+                count_numeric += 1
+
+            except:
+                pass
+
+        if count_numeric >= 3:
+
+            numeric_columns.append(col)
+
+    for col in numeric_columns:
+
+        calculated_total = 0
+
+        for row in range(total_row):
+
+            try:
+
+                value = str(
+                    raw_df.iat[row, col]
+                ).replace(",", "")
+
+                calculated_total += float(value)
+
+            except:
+                pass
+
+        try:
+
+            grand_total_value = str(
+                raw_df.iat[total_row, col]
+            ).replace(",", "")
+
+            grand_total_value = float(grand_total_value)
+
+        except:
+
+            continue
+
+        if round(calculated_total, 2) != round(grand_total_value, 2):
+
+            changes.append({
+                "row": total_row + 1,
+                "reason":
+                f"Column {col + 1} total mismatch "
+                f"(Calculated={calculated_total:.2f}, "
+                f"Grand Total={grand_total_value:.2f})"
+            })
+
+    return raw_df, cleaned_df, changes
 # ============================================================
 # SUNDRY CREDITORS CLEANING
 # ============================================================

@@ -14,6 +14,7 @@ from cleaner import (
     clean_jv_file,
     clean_sundry_creditors_file,
     save_cleaned_workbook,
+    clean_ho_exp_file,
     generate_summary_txt
 )
 
@@ -239,6 +240,8 @@ if uploaded_files:
 
         elif detected_type == "STOCK":
             raw_df, cleaned_df, changes = clean_stock_file(temp_input.name)
+        elif detected_type == "HO EXP":
+            raw_df, cleaned_df, changes = clean_ho_exp_file(temp_input.name)    
 
         elif detected_type == "JV":
             raw_df, cleaned_df, changes = clean_jv_file(temp_input.name)
@@ -310,6 +313,7 @@ if uploaded_files:
                 "PURCHASE",
                 "STOCK",
                 "JV",
+                "HO EXP",
                 "SUNDRY CREDITORS"
             ],
             key=uploaded_file.name
@@ -328,7 +332,8 @@ if uploaded_files:
 
             elif manual_type == "JV":
                 raw_df, cleaned_df, changes = clean_jv_file(temp_input.name)
-
+            elif manual_type == "HO EXP":
+                raw_df, cleaned_df, changes = clean_ho_exp_file(temp_input.name)
             elif manual_type == "SUNDRY CREDITORS":
                 raw_df, cleaned_df, changes = clean_sundry_creditors_file(temp_input.name)
 
